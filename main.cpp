@@ -6,23 +6,75 @@
 using namespace std;
 
 class Node {
+    public:
     char letter;
     Node** childs;  // child pointer holder holder
     int rank;   // level in tree
     int childSize; // amount of children nodes
+    int* combination;
 
-    public:
     Node(char letter, int rank) {
         this->letter = letter;
-        this->childs = new Node * [10 - rank];
+        this->childs = new Node * [10];
         this->rank = rank;
         this->childSize = 0;
     }
+    void createCombination(int* parentCombination, int uniqueLetterAmount, int newIndex) {
+        this->combination = new int[uniqueLetterAmount];
+        for (int i = 0; i < uniqueLetterAmount; i++) {
+            if (i < rank) {
+                this->combination[i] = parentCombination[i];
+            } else {
+                this->combination[i] = -1;
+                if (i == rank) {
+                    this->combination[i] = newIndex;
+                }
+            }
+        }
+    }
+    void print(int size) {
+        cout << this->rank << ": ";
+        for (int i = 0; i < size; i++) {
+            cout << combination[i] << " ";
+        }
+        cout << '\n';
+    }
+    void checkConstraint() {
+        // chekku shite kadasai
+    }
+};
 
-    void createMatrix(char * uniqueLetters, int uniqueLetterAmount) {
+class Tree {
+    public:
+    Node * root;
+    int uniqueLetterAmount;
+    char * uniqueLetters;
 
+    
+    Tree(int uniqueLetterAmount, char* uniqueLetters) {
+        this->root = new Node(' ', 0);
+        this->root->combination = new int[uniqueLetterAmount];
+        for (int i = 0; i < uniqueLetterAmount; i++) {
+            this->root->combination[i] = -1;
+        }
+        this->uniqueLetterAmount = uniqueLetterAmount;
+        this->uniqueLetters = uniqueLetters;
+        
+        recursiveCreate(this->root, 0);
+        this->root->combination[0] = -1;
     }
 
+    void recursiveCreate(Node* currentNode, int index) {
+        if (index == uniqueLetterAmount) {
+            return;
+        }
+        for (int i = 0; i < 10; i++) {
+            currentNode->childs[i] = new Node(this->uniqueLetters[index], index);
+            currentNode->childs[i]->createCombination(currentNode->combination, uniqueLetterAmount, i);
+            //currentNode->childs[i]->print(uniqueLetterAmount);
+            recursiveCreate(currentNode->childs[i], index+1);
+        }
+    }
 };
 
 int main (int argc, char** argv) {
@@ -62,22 +114,21 @@ int main (int argc, char** argv) {
 
 	int uniqueLetterAmount = 0;
 
-    char * uniqueLetters = new char[augend.length() + addend.length() + sum.length()];
-
-    Node * root = new Node(' ', 0); // create node of empty matrix
+    char * uniqueLetters = new char[augend.length() + addend.length() + sum.length()]; // max possibility of unique letters
 
 	while(inFile.peek() != EOF) {
         // read unique letters from input matrix
         getline(inFile, data, '\t'); // get unique letter
         uniqueLetters[uniqueLetterAmount++] = data.at(0);
-        cout << uniqueLetters[uniqueLetterAmount - 1] << endl;
 		getline(inFile, data, '\n'); // move to next line
 	}
 
     inFile.close();
 
-    if (search_type.compare("BFS") == 0) {
+    Tree * mytree = new Tree(uniqueLetterAmount, uniqueLetters);
 
+    if (search_type.compare("BFS") == 0) {
+        
     } else if (search_type.compare("DFS") == 0) {
 
     } else {
