@@ -47,6 +47,7 @@ class Node {
             }
         }
     }
+
     void print(int size) {
         cout << this->rank << ": ";
         for (int i = 0; i < size; i++) {
@@ -55,41 +56,86 @@ class Node {
         cout << '\n';
     }
 
-    int checkSum(string st, char * uniqueLetters, int uniqueLetterAmount) {
-        int sum = 0;
-        for (int i = st.length() - 1, j = 0; i >= 0; i--, j++) {
-            int pow = 1;
-            for (int k = 0; k < j; k++) {
-                pow *= 10;
+    int getNum(char letterToCheck, char * uniqueLetters, int uniqueLetterAmount) {
+        for (int i = 0; i < uniqueLetterAmount; i++) {
+            if (toupper(uniqueLetters[i]) == letterToCheck) {
+                return this->combination[i];
             }
-            int k = 0;
-            int charIndex = -1;
-            while(k < uniqueLetterAmount) {
-                if (toupper(uniqueLetters[k]) == st.at(i)) {
-                    charIndex = k;
-                }
-                k++;
-            }
-            if (this->combination[charIndex] == -1) {
-                return 0;
-            }
-            sum += pow * this->combination[charIndex];
         }
-        return sum;
+        return -1;
     }
 
-    int * checkConstraint(string augend, string addend, string sum, char * uniqueLetters, int uniqueLetterAmount) {
-        /*
-        int sumAugend = checkSum(augend, uniqueLetters, uniqueLetterAmount);
-        int sumAddend = checkSum(addend, uniqueLetters, uniqueLetterAmount);
-        int sumSum = checkSum(sum, uniqueLetters, uniqueLetterAmount);
-        if (sumAugend == 0 || sumAddend == 0 || sumSum == 0) {
-            return NULL;
+    bool checkConstraint(string augend, string addend, string sum, char * uniqueLetters, int uniqueLetterAmount) {
+        int carryOver = 0;
+        bool unknownCurrent = false;
+        int augendNum = 0, addendNum = 0, sumNum = 0;
+        int i = augend.length()-1, j = addend.length()-1, k = sum.length()-1;
+        while (i >= 0 || j >= 0 || k >= 0) {
+            augendNum = 0, addendNum = 0, sumNum = 0;
+            if (i >= 0) {
+                augendNum = getNum(augend.at(i), uniqueLetters, uniqueLetterAmount);
+                if (augendNum == -1) {
+                    unknownCurrent = true;
+                    i--, j--, k--;
+                    continue;
+                } else if (i == 0) {
+                    if (getNum(augend.at(i), uniqueLetters, uniqueLetterAmount) == 0) {
+                        return false;
+                    }
+                }
+            }
+            if (j >= 0) {
+                addendNum = getNum(addend.at(j), uniqueLetters, uniqueLetterAmount);
+                if (addendNum == -1) {
+                    unknownCurrent = true;
+                    i--, j--, k--;
+                    continue;
+                } else if (j == 0) {
+                    if (getNum(addend.at(j), uniqueLetters, uniqueLetterAmount) == 0) {
+                        return false;
+                    }
+                }
+            }
+            if (k >= 0) {
+                sumNum = getNum(sum.at(k), uniqueLetters, uniqueLetterAmount);
+                if (sumNum == -1) {
+                    unknownCurrent = true;
+                    i--, j--, k--;
+                    continue;
+                } else if (k == 0) {
+                    if (getNum(sum.at(k), uniqueLetters, uniqueLetterAmount) == 0) {
+                        return false;
+                    }
+                }
+            }
+            //cout << augend.at(i) << augendNum << " + " << addend.at(j) << addendNum << " = " << sum.at(k) << sumNum << endl;
+            
+            if (unknownCurrent == true) {
+                
+                unknownCurrent = false;
+                if (augendNum + addendNum + 0 == sumNum) {
+                    carryOver = 0;
+                } else if (augendNum + addendNum + 0 == sumNum + 10) {
+                    carryOver = 1;
+                } else if (augendNum + addendNum + 1 == sumNum) {
+                    carryOver = 0;
+                } else if (augendNum + addendNum + 1 == sumNum + 10) {
+                    carryOver = 1;
+                } else {
+                    return false;
+                }
+            } else {
+                if (augendNum + addendNum + carryOver == sumNum) {
+                    carryOver = 0;
+                } else if (augendNum + addendNum + carryOver == sumNum + 10) {
+                    carryOver = 1;
+                } else {
+                    return false;
+                }
+            }
+            i--, j--, k--;
         }
-        if (sumAugend + sumAddend == sumSum) {
-            return this->combination;
-        }*/
-        return NULL;
+        return true;
     }
 };
 
@@ -143,8 +189,8 @@ int main (int argc, char** argv) {
         sum = argv[4];
         outputFileName = argv[5];
 	} else {
-        cout << "ERROR: Correct amount of arguments must be supplied. Correct form:" << endl;
-        cout << "./hw1 searchType augend addend sum outputFileName" << endl;
+        cerr << "ERROR: Correct amount of arguments must be supplied. Correct form:" << endl;
+        cerr << "./hw1 searchType augend addend sum outputFileName" << endl;
         exit(1);
 	}
 	
@@ -175,49 +221,51 @@ int main (int argc, char** argv) {
 
     Tree * mytree = new Tree(uniqueLetterAmount, uniqueLetters);
 
-    cout << ( (float) clock() - runtime ) / CLOCKS_PER_SEC << endl;
+    //cout << "Tree construction time: " << ( (float) clock() - runtime ) / CLOCKS_PER_SEC << endl;
 
     int visitedNodeAmount = 0;
-
-    int * answer = new int[uniqueLetterAmount];
+    int maxNodes = 0;
+    int * answer = NULL;
 
     if (search_type.compare("BFS") == 0) {
         queue<Node*> q;
         Node* traverser;
         q.push(mytree->root);
         while(q.empty() == false) {
-            traverser = q.front();
-            //traverser->print(uniqueLetterAmount);
-            answer = traverser->checkConstraint(augend, addend, sum, uniqueLetters, uniqueLetterAmount);
-            visitedNodeAmount++;
-            q.pop();
-            if (answer != NULL) {
-                // found answer
-                break;
+            if (q.size() > maxNodes) {
+                maxNodes = q.size();
             }
-            if (traverser->rank != uniqueLetterAmount) {
-                for (int i = 0; i < 10 - traverser->rank; i++) {
-                    q.push(traverser->childs[i]);
+            traverser = q.front();
+            q.pop();
+            visitedNodeAmount++;
+            //traverser->print(uniqueLetterAmount);
+            if (traverser->checkConstraint(augend, addend, sum, uniqueLetters, uniqueLetterAmount) == true) {
+                if (traverser->rank == uniqueLetterAmount) {
+                    answer = traverser->combination;
+                    break;
+                }
+                if (traverser->rank != uniqueLetterAmount) {
+                    for (int i = 0; i < 10 - traverser->rank; i++) {
+                        q.push(traverser->childs[i]);
+                    }
                 }
             }
         }
     } else if (search_type.compare("DFS") == 0) {
 
     } else {
-        cout << "ERROR: Invalid search type. Please use either BFS or DFS as first argument." << endl;
+        cerr << "ERROR: Invalid search type. Please use either BFS or DFS as first argument." << endl;
         exit(1);
     }
 
-    cout << "Algorithm: " << search_type << endl;
-    cout << "Number of visited nodes: " << visitedNodeAmount << endl;
-    cout << "Maximum number of nodes kept in the memory: " << endl;
-    cout << "Solution: ";
-    for (int i = 0; i < uniqueLetterAmount; i++) {
-        cout << (char)toupper(uniqueLetters[i]) << ": " << answer[i];
-        if (i + 1 != uniqueLetterAmount) {
-            cout << ", ";
-        } else {
-            cout << endl;
+    bool answerExists = false;
+    if (answer != NULL) {
+        answerExists = true;
+    } else {
+        answerExists = false;
+        answer = new int[uniqueLetterAmount];
+        for (int i = 0; i < uniqueLetterAmount; i++) {
+            answer[i] = -1;
         }
     }
 
@@ -252,16 +300,37 @@ int main (int argc, char** argv) {
             if (j + 1 != 10) {
                 outFile << '\t';
             } else {
-                outFile << endl;
+                if (i + 1 != uniqueLetterAmount) {
+                    outFile << endl;
+                }
             }
         }
     }
 
     outFile.close();
 
+    cout << "Algorithm: " << search_type << endl;
+    cout << "Number of visited nodes: " << visitedNodeAmount << endl;
+    cout << "Maximum number of nodes kept in the memory: " << maxNodes << endl;
+
 	runtime = clock() - runtime; // calculate program execution time
 
 	cout << "Running time: " << ( (float) runtime ) / CLOCKS_PER_SEC << " seconds" << endl;
+
+    cout << "Solution: ";
+
+    if (answerExists == false) {
+        cout << "Answer could not be found" << endl;
+    } else {
+        for (int i = 0; i < uniqueLetterAmount; i++) {
+            cout << (char)toupper(uniqueLetters[i]) << ": " << answer[i];
+            if (i + 1 != uniqueLetterAmount) {
+                cout << ", ";
+            } else {
+                cout << endl;
+            }
+        }
+    }
 
 	return 0;
 }
