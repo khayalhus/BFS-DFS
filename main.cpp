@@ -2,45 +2,42 @@
 #include<fstream> // ifstream, ofstream
 #include<time.h> // clock_t, clock, CLOCKS_PER_SEC
 #include<string> // string, getline
-#include<queue>
+#include<queue> // STL queue (for BFS)
 
 using namespace std;
 
 class Node {
     public:
-    char letter;
     Node** childs;  // child pointer holder holder
     int rank;  // level in tree
-    int childSize; // amount of children nodes
-    int* combination;
+    int* combination; // letter to number arrangement
 
     Node(char letter, int rank) {
-        this->letter = letter;
-        this->childs = new Node * [10 - rank];
-        this->rank = rank;
-        this->childSize = 0;
+        this->childs = new Node * [10 - rank]; // amount of childs in the tree
+        this->rank = rank; // level of this node in the tree
     }
     void createCombination(int* parentCombination, int uniqueLetterAmount, int newIndex) {
-        int possibilities[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+        int possibilities[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; // possible number assignments (from 0 to 9)
         this->combination = new int[uniqueLetterAmount];
 
         for (int i = 0; i < uniqueLetterAmount; i++) {
             if (i < rank - 1) {
-                this->combination[i] = parentCombination[i];
-                possibilities[parentCombination[i]] = 0;
+                this->combination[i] = parentCombination[i]; // copy already assigned letters from parent
+                possibilities[parentCombination[i]] = 0; // remove the numbers from possibilities
             } else {
-                this->combination[i] = -1;
+                this->combination[i] = -1; // assign the non-assigned letters as -1
                 if (i == rank - 1) {
+                    // assign the current node's letter
                     int k = 0;
                     for (int j = 0; j < 10; j++) {
                         if (possibilities[j] == 1) {
                             if(k == newIndex) {
+                                // assign according to this node's position according to parent
                                 this->combination[i] = j;
                                 break;
                             } else {
                                 k++;
                             }
-                            
                         }
                     }
                 }
@@ -57,6 +54,7 @@ class Node {
     }
 
     int getNum(char letterToCheck, char * uniqueLetters, int uniqueLetterAmount) {
+        // function returns the assigned number for the requested letter
         for (int i = 0; i < uniqueLetterAmount; i++) {
             if (toupper(uniqueLetters[i]) == letterToCheck) {
                 return this->combination[i];
@@ -66,20 +64,23 @@ class Node {
     }
 
     bool checkConstraint(string augend, string addend, string sum, char * uniqueLetters, int uniqueLetterAmount) {
-        int carryOver = 0;
-        bool unknownCurrent = false;
-        int augendNum = 0, addendNum = 0, sumNum = 0;
-        int i = augend.length()-1, j = addend.length()-1, k = sum.length()-1;
+        // function returns whether the letter to number assignment follows the constraints
+        int carryOver = 0; // carry out from previous equation (this will be next equation's carry in)
+        bool unknownCurrent = false; // stores whether constraints were checked for previous equation
+        int augendNum = 0, addendNum = 0, sumNum = 0; // holds assigned number of letter
+        int i = augend.length()-1, j = addend.length()-1, k = sum.length()-1; // iterators for augend, addend, sum
         while (i >= 0 || j >= 0 || k >= 0) {
-            augendNum = 0, addendNum = 0, sumNum = 0;
+            augendNum = 0, addendNum = 0, sumNum = 0; // reset number assignments
             if (i >= 0) {
                 augendNum = getNum(augend.at(i), uniqueLetters, uniqueLetterAmount);
                 if (augendNum == -1) {
+                    // if augend letter is unassigned, skip equation
                     unknownCurrent = true;
                     i--, j--, k--;
                     continue;
                 } else if (i == 0) {
                     if (getNum(augend.at(i), uniqueLetters, uniqueLetterAmount) == 0) {
+                        // if this is the leftmost letter and it is 0
                         return false;
                     }
                 }
@@ -87,11 +88,13 @@ class Node {
             if (j >= 0) {
                 addendNum = getNum(addend.at(j), uniqueLetters, uniqueLetterAmount);
                 if (addendNum == -1) {
+                    // if addend letter is unassigned, skip equation
                     unknownCurrent = true;
                     i--, j--, k--;
                     continue;
                 } else if (j == 0) {
                     if (getNum(addend.at(j), uniqueLetters, uniqueLetterAmount) == 0) {
+                        // if this is the leftmost letter and it is 0
                         return false;
                     }
                 }
@@ -99,20 +102,21 @@ class Node {
             if (k >= 0) {
                 sumNum = getNum(sum.at(k), uniqueLetters, uniqueLetterAmount);
                 if (sumNum == -1) {
+                    // if sum letter is unassigned, skip equation
                     unknownCurrent = true;
                     i--, j--, k--;
                     continue;
                 } else if (k == 0) {
                     if (getNum(sum.at(k), uniqueLetters, uniqueLetterAmount) == 0) {
+                        // if this is the leftmost letter and it is 0
                         return false;
                     }
                 }
             }
-            //cout << augend.at(i) << augendNum << " + " << addend.at(j) << addendNum << " = " << sum.at(k) << sumNum << endl;
             
             if (unknownCurrent == true) {
-                
-                unknownCurrent = false;
+                // if previous equation was not checked (carry in of current eq is unknown)
+                unknownCurrent = false; // reset var as current eq is being checked
                 if (augendNum + addendNum + 0 == sumNum) {
                     carryOver = 0;
                 } else if (augendNum + addendNum + 0 == sumNum + 10) {
@@ -125,6 +129,7 @@ class Node {
                     return false;
                 }
             } else {
+                // if previous equation was checked (carry in of current eq is known)
                 if (augendNum + addendNum + carryOver == sumNum) {
                     carryOver = 0;
                 } else if (augendNum + addendNum + carryOver == sumNum + 10) {
@@ -135,7 +140,7 @@ class Node {
             }
             i--, j--, k--;
         }
-        return true;
+        return true; // if everything passes, return true for now
     }
 };
 
@@ -144,28 +149,27 @@ class Tree {
     Node * root;
     int uniqueLetterAmount;
     char * uniqueLetters;
-
     
     Tree(int uniqueLetterAmount, char* uniqueLetters) {
-        this->root = new Node(' ', 0);
+        this->root = new Node(' ', 0); // manually create root node and its combination
         this->root->combination = new int[uniqueLetterAmount];
         for (int i = 0; i < uniqueLetterAmount; i++) {
             this->root->combination[i] = -1;
         }
         this->uniqueLetterAmount = uniqueLetterAmount;
         this->uniqueLetters = uniqueLetters;
-        ofstream outFile;
         recursiveCreate(this->root);
     }
 
     void recursiveCreate(Node* currentNode) {
+        // recursively creates the tree
         if (currentNode->rank == uniqueLetterAmount) {
+            // if leaf node is reached, return back
             return;
         }
         for (int i = 0; i < 10 - currentNode->rank; i++) {
             currentNode->childs[i] = new Node(this->uniqueLetters[currentNode->rank+1], currentNode->rank+1);
             currentNode->childs[i]->createCombination(currentNode->combination, uniqueLetterAmount, i);
-            //currentNode->childs[i]->print(uniqueLetterAmount);
             recursiveCreate(currentNode->childs[i]);
         }
     }
@@ -173,8 +177,8 @@ class Tree {
 
 int main (int argc, char** argv) {
     
-	clock_t runtime; // used for running time
-	runtime = clock();
+	clock_t runtime; // used for running time of program
+	runtime = clock(); // get start time
 
     string search_type;
     string augend;
@@ -194,6 +198,8 @@ int main (int argc, char** argv) {
         exit(1);
 	}
 	
+    /* read unique letters from file */
+
 	ifstream inFile;
 	inFile.open(augend + " " + addend + " " + sum + ".txt");
 
@@ -223,28 +229,33 @@ int main (int argc, char** argv) {
 
     //cout << "Tree construction time: " << ( (float) clock() - runtime ) / CLOCKS_PER_SEC << endl;
 
+    /* execute the requested search */
+
     int visitedNodeAmount = 0;
-    int maxNodes = 0;
+    int maxNodes = 0; // max nodes kept in memory
     int * answer = NULL;
 
     if (search_type.compare("BFS") == 0) {
         queue<Node*> q;
         Node* traverser;
-        q.push(mytree->root);
+        q.push(mytree->root); // push root to queue
         while(q.empty() == false) {
+            // execute until queue is empty
             if (q.size() > maxNodes) {
+                // check for maximum amount of nodes kept in memory
                 maxNodes = q.size();
             }
-            traverser = q.front();
-            q.pop();
+            traverser = q.front(); // get front-most node from queue
+            q.pop(); // remove this node from queue
             visitedNodeAmount++;
-            //traverser->print(uniqueLetterAmount);
             if (traverser->checkConstraint(augend, addend, sum, uniqueLetters, uniqueLetterAmount) == true) {
                 if (traverser->rank == uniqueLetterAmount) {
+                    // if constraint holds for node and it is a leaf node, we have found our answer
                     answer = traverser->combination;
                     break;
                 }
                 if (traverser->rank != uniqueLetterAmount) {
+                    // if constraint holds for node and it is not a leaf node, we add its children to the queue
                     for (int i = 0; i < 10 - traverser->rank; i++) {
                         q.push(traverser->childs[i]);
                     }
@@ -258,6 +269,8 @@ int main (int argc, char** argv) {
         exit(1);
     }
 
+    /* check whether answer was found */
+
     bool answerExists = false;
     if (answer != NULL) {
         answerExists = true;
@@ -268,6 +281,8 @@ int main (int argc, char** argv) {
             answer[i] = -1;
         }
     }
+
+    /* write to file */
 
     ofstream outFile;
 
@@ -308,6 +323,8 @@ int main (int argc, char** argv) {
     }
 
     outFile.close();
+
+    /* write to console */
 
     cout << "Algorithm: " << search_type << endl;
     cout << "Number of visited nodes: " << visitedNodeAmount << endl;
