@@ -12,7 +12,7 @@ class Node {
     int rank;  // level in tree
     int* combination; // letter to number arrangement
 
-    Node(char letter, int rank) {
+    Node(int rank) {
         this->childs = new Node * [10 - rank]; // amount of childs in the tree
         this->rank = rank; // level of this node in the tree
     }
@@ -151,7 +151,7 @@ class Tree {
     char * uniqueLetters;
     
     Tree(int uniqueLetterAmount, char* uniqueLetters) {
-        this->root = new Node(' ', 0); // manually create root node and its combination
+        this->root = new Node(0); // manually create root node and its combination
         this->root->combination = new int[uniqueLetterAmount];
         for (int i = 0; i < uniqueLetterAmount; i++) {
             this->root->combination[i] = -1;
@@ -168,7 +168,7 @@ class Tree {
             return;
         }
         for (int i = 0; i < 10 - currentNode->rank; i++) {
-            currentNode->childs[i] = new Node(this->uniqueLetters[currentNode->rank+1], currentNode->rank+1);
+            currentNode->childs[i] = new Node(currentNode->rank+1);
             currentNode->childs[i]->createCombination(currentNode->combination, uniqueLetterAmount, i);
             recursiveCreate(currentNode->childs[i]);
         }
