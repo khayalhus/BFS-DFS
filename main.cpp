@@ -2,7 +2,7 @@
 #include<fstream> // ifstream, ofstream
 #include<time.h> // clock_t, clock, CLOCKS_PER_SEC
 #include<string> // string, getline
-#include<queue> // STL queue (for BFS)
+#include<list> // STL list (for BFS and DFS)
 
 using namespace std;
 
@@ -236,9 +236,9 @@ int main (int argc, char** argv) {
     int * answer = NULL;
 
     if (search_type.compare("BFS") == 0) {
-        queue<Node*> q;
+        list<Node*> q;
         Node* traverser;
-        q.push(mytree->root); // push root to queue
+        q.push_back(mytree->root); // push root to queue
         while(q.empty() == false) {
             // execute until queue is empty
             if (q.size() > maxNodes) {
@@ -246,7 +246,7 @@ int main (int argc, char** argv) {
                 maxNodes = q.size();
             }
             traverser = q.front(); // get front-most node from queue
-            q.pop(); // remove this node from queue
+            q.pop_front(); // remove this node from queue
             visitedNodeAmount++;
             if (traverser->checkConstraint(augend, addend, sum, uniqueLetters, uniqueLetterAmount) == true) {
                 if (traverser->rank == uniqueLetterAmount) {
@@ -257,13 +257,38 @@ int main (int argc, char** argv) {
                 if (traverser->rank != uniqueLetterAmount) {
                     // if constraint holds for node and it is not a leaf node, we add its children to the queue
                     for (int i = 0; i < 10 - traverser->rank; i++) {
-                        q.push(traverser->childs[i]);
+                        q.push_back(traverser->childs[i]);
                     }
                 }
             }
         }
     } else if (search_type.compare("DFS") == 0) {
-
+        list<Node*> s; // stack
+        Node* traverser;
+        s.push_back(mytree->root);
+        while(s.empty() == false) {
+            // execute until stack is empty
+            if (s.size() > maxNodes) {
+                // check for maximum amount of nodes kept in memory
+                maxNodes = s.size();
+            }
+            traverser = s.back(); // get top-most node from stack
+            s.pop_back(); // remove this node from queue
+            visitedNodeAmount++;
+            if (traverser->checkConstraint(augend, addend, sum, uniqueLetters, uniqueLetterAmount) == true) {
+                if (traverser->rank == uniqueLetterAmount) {
+                    // if constraint holds for node and it is a leaf node, we have found our answer
+                    answer = traverser->combination;
+                    break;
+                }
+                if (traverser->rank != uniqueLetterAmount) {
+                    // if constraint holds for node and it is not a leaf node, we add its children to the queue
+                    for (int i = 0; i < 10 - traverser->rank; i++) {
+                        s.push_back(traverser->childs[i]);
+                    }
+                }
+            }
+        }
     } else {
         cerr << "ERROR: Invalid search type. Please use either BFS or DFS as first argument." << endl;
         exit(1);
