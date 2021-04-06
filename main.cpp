@@ -16,6 +16,9 @@ class Node {
         this->childs = new Node * [10 - rank]; // amount of childs in the tree
         this->rank = rank; // level of this node in the tree
     }
+    ~Node() {
+        delete [] this->combination;
+    }
     void createCombination(int* parentCombination, int uniqueLetterAmount, int newIndex) {
         int possibilities[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; // possible number assignments (from 0 to 9)
         this->combination = new int[uniqueLetterAmount];
@@ -161,6 +164,19 @@ class Tree {
         recursiveCreate(this->root);
     }
 
+    ~Tree() {
+        recursiveDelete(this->root);
+    }
+
+    void recursiveDelete(Node* currentNode) {
+        for (int i = 0; i < 10 - currentNode->rank; i++) {
+            if (currentNode->rank != uniqueLetterAmount) {
+                recursiveDelete(currentNode->childs[i]);
+            }
+        }
+        delete currentNode;
+    }
+
     void recursiveCreate(Node* currentNode) {
         // recursively creates the tree
         if (currentNode->rank == uniqueLetterAmount) {
@@ -291,6 +307,7 @@ int main (int argc, char** argv) {
         }
     } else {
         cerr << "ERROR: Invalid search type. Please use either BFS or DFS as first argument." << endl;
+        delete mytree;
         exit(1);
     }
 
@@ -299,6 +316,11 @@ int main (int argc, char** argv) {
     bool answerExists = false;
     if (answer != NULL) {
         answerExists = true;
+        int * tempAnswer = answer;
+        answer = new int[uniqueLetterAmount];
+        for (int i = 0; i < uniqueLetterAmount; i++) {
+            answer[i] = tempAnswer[i];
+        }
     } else {
         answerExists = false;
         answer = new int[uniqueLetterAmount];
@@ -306,6 +328,8 @@ int main (int argc, char** argv) {
             answer[i] = -1;
         }
     }
+
+    delete mytree;
 
     /* write to file */
 
@@ -374,5 +398,8 @@ int main (int argc, char** argv) {
         }
     }
 
+    delete [] answer;
+    delete [] uniqueLetters;
+    
 	return 0;
 }
